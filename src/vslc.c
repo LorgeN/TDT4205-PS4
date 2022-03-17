@@ -1,15 +1,16 @@
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include <vslc.h>
 
 /* Global state */
 
-node_t *root;             // Syntax tree
-tlhash_t *global_names;   // Symbol table
-char **string_list;       // List of strings in the source
-size_t n_string_list = 8; // Initial string list capacity (grow on demand)
-size_t stringc = 0;       // Initial string count
+node_t *root;            // Syntax tree
+tlhash_t *global_names;  // Symbol table
+// MODIFIED: Set to NULL as initial value so that we get defined behaviour from realloc
+char **string_list = NULL;  // List of strings in the source
+size_t n_string_list = 0;   // Initial string list capacity (grow on demand)
+size_t stringc = 0;         // Initial string count
 
 /* Command line option parsing for the main function */
 static void options(int argc, char **argv);
@@ -20,24 +21,23 @@ bool
     new_print_style = true;
 
 /* Entry point */
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     options(argc, argv);
 
-    yyparse(); // Generated from grammar/bison, constructs syntax tree
+    yyparse();  // Generated from grammar/bison, constructs syntax tree
 
     if (print_full_tree)
         print_syntax_tree();
-    simplify_syntax_tree(); // In tree.c
+    simplify_syntax_tree();  // In tree.c
     if (print_simplified_tree)
         print_syntax_tree();
 
-    create_symbol_table(); // In ir.c
+    create_symbol_table();  // In ir.c
     if (print_symbol_table_contents)
         print_symbol_table();
 
-    destroy_syntax_tree();  // In tree.c
-    destroy_symbol_table(); // In ir.c
+    destroy_syntax_tree();   // In tree.c
+    destroy_symbol_table();  // In ir.c
 }
 
 static const char *usage =
@@ -49,29 +49,26 @@ static const char *usage =
     "\t-u\tDo not use print style more like the tree command\n";
 
 static void
-options(int argc, char **argv)
-{
+options(int argc, char **argv) {
     int o;
-    while ((o = getopt(argc, argv, "htTsu")) != -1)
-    {
-        switch (o)
-        {
-        case 'h':
-            printf("%s:\n%s", argv[0], usage);
-            exit(EXIT_FAILURE);
-            break;
-        case 't':
-            print_full_tree = true;
-            break;
-        case 'T':
-            print_simplified_tree = true;
-            break;
-        case 's':
-            print_symbol_table_contents = true;
-            break;
-        case 'u':
-            new_print_style = false;
-            break;
+    while ((o = getopt(argc, argv, "htTsu")) != -1) {
+        switch (o) {
+            case 'h':
+                printf("%s:\n%s", argv[0], usage);
+                exit(EXIT_FAILURE);
+                break;
+            case 't':
+                print_full_tree = true;
+                break;
+            case 'T':
+                print_simplified_tree = true;
+                break;
+            case 's':
+                print_symbol_table_contents = true;
+                break;
+            case 'u':
+                new_print_style = false;
+                break;
         }
     }
 }

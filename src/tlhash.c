@@ -1,7 +1,6 @@
-#include <string.h>
-#include <stdlib.h>
 #include <stdint.h>
-
+#include <stdlib.h>
+#include <string.h>
 #include <tlhash.h>
 
 /*********************************************************************
@@ -24,9 +23,9 @@ static uint32_t crc32(void *input, size_t length);
  * Returns
  *  ENOMEM - if allocation of table entries fails.
  */
-int tlhash_init(tlhash_t *tab, size_t n_buckets)
-{
+int tlhash_init(tlhash_t *tab, size_t n_buckets, tlhash_t *parent) {
     size_t i;
+    tab->parent = parent;
     tab->n_buckets = n_buckets;
     tab->size = 0;
     tab->buckets = (tlhash_element_t **)calloc(
@@ -42,16 +41,13 @@ int tlhash_init(tlhash_t *tab, size_t n_buckets)
  * Returns
  *  ENOENT - if there is no table to free.
  */
-int tlhash_finalize(tlhash_t *tab)
-{
+int tlhash_finalize(tlhash_t *tab) {
     size_t i;
     if (tab == NULL)
         return TLHASH_ENOENT;
-    for (i = 0; i < tab->n_buckets; i++)
-    {
+    for (i = 0; i < tab->n_buckets; i++) {
         tlhash_element_t *element = tab->buckets[i], *next;
-        while (element != NULL)
-        {
+        while (element != NULL) {
             next = element->next;
             free(element->key);
             free(element);
@@ -70,24 +66,28 @@ int tlhash_finalize(tlhash_t *tab)
  *  ENOMEM - if allocation of element or key copy fails
  */
 int tlhash_insert(
-    tlhash_t *tab, void *key, size_t key_length, void *value)
-{
+    tlhash_t *tab, void *key, size_t key_length, void *value) {
     void *test_entry;
     int test = tlhash_lookup(tab, key, key_length, &test_entry);
     if (test != TLHASH_ENOENT)
         return TLHASH_EEXIST;
+
     uint32_t hash = crc32(key, key_length);
     size_t bucket = hash % tab->n_buckets;
     tlhash_element_t *element = malloc(sizeof(tlhash_element_t));
+
     if (element == NULL)
         return TLHASH_ENOMEM;
+
     void *key_copy = malloc(key_length);
-    if (key_copy == NULL)
-    {
+
+    if (key_copy == NULL) {
         free(element);
         return TLHASH_ENOMEM;
     }
+
     memcpy(key_copy, key, key_length);
+
     element->key = key_copy;
     element->key_length = key_length;
     element->value = value;
@@ -97,47 +97,58 @@ int tlhash_insert(
     return TLHASH_SUCCESS;
 }
 
+int tlhash_lookup_recurse(
+    tlhash_t *tab, void *key, size_t key_length, void **value) {
+    // Perform internal lookup first
+    int res = tlhash_lookup(tab, key, key_length, value);
+
+    // Check if internal lookup failed, and this table has a parent. If so,
+    // lookup there
+    if (res == TLHASH_ENOENT && tab->parent != NULL) {
+        res = tlhash_lookup_recurse(tab->parent, key, key_length, value);
+    }
+
+    return res;
+}
+
 /* Lookup - find hash value, modulate over buckets, search linked list
  * Returns
  *  ENOENT - if no element is indexed by this key
  */
 int tlhash_lookup(
-    tlhash_t *tab, void *key, size_t key_length, void **value)
-{
+    tlhash_t *tab, void *key, size_t key_length, void **value) {
     uint32_t hash = crc32(key, key_length);
     size_t bucket = hash % tab->n_buckets;
     tlhash_element_t *el = tab->buckets[bucket];
 
     *value = NULL;
-    while (el != NULL)
-    {
-        if (el->key_length == key_length && !memcmp(el->key, key, key_length))
-        {
+    while (el != NULL) {
+        if (el->key_length == key_length && !memcmp(el->key, key, key_length)) {
             *value = el->value;
             break;
         }
+
         el = el->next;
     }
-    if (el != NULL)
+
+    if (el != NULL) {
         return TLHASH_SUCCESS;
-    else
+    } else {
         return TLHASH_ENOENT;
+    }
 }
 
 /* Removal - find hash value, modulate over buckets, delete entry
  * Returns
  *  ENOENT - no such element to remove was found.
  */
-int tlhash_remove(tlhash_t *tab, void *key, size_t key_length)
-{
+int tlhash_remove(tlhash_t *tab, void *key, size_t key_length) {
     uint32_t hash = crc32(key, key_length);
     size_t bucket = hash % tab->n_buckets;
     tlhash_element_t *el = tab->buckets[bucket], *prev = NULL;
 
-    while (el != NULL)
-    {
-        if (el->key_length == key_length && !memcmp(el->key, key, key_length))
-        {
+    while (el != NULL) {
+        if (el->key_length == key_length && !memcmp(el->key, key, key_length)) {
             /* We have a match. */
             if (prev != NULL) /* Remove from list if it's not the head */
                 prev->next = (void *)el->next;
@@ -153,27 +164,22 @@ int tlhash_remove(tlhash_t *tab, void *key, size_t key_length)
     }
     if (el == NULL)
         return TLHASH_ENOENT;
-    else
-    {
+    else {
         tab->size -= 1;
         return TLHASH_SUCCESS;
     }
 }
 
 size_t
-tlhash_size(tlhash_t *tab)
-{
+tlhash_size(tlhash_t *tab) {
     return tab->size;
 }
 
-void tlhash_keys(tlhash_t *tab, void **keys)
-{
+void tlhash_keys(tlhash_t *tab, void **keys) {
     size_t b, i = 0;
-    for (b = 0; b < tab->n_buckets; b++)
-    {
+    for (b = 0; b < tab->n_buckets; b++) {
         tlhash_element_t *el = tab->buckets[b];
-        while (el != NULL)
-        {
+        while (el != NULL) {
             keys[i] = el->key;
             i += 1;
             el = el->next;
@@ -181,14 +187,11 @@ void tlhash_keys(tlhash_t *tab, void **keys)
     }
 }
 
-void tlhash_values(tlhash_t *tab, void **values)
-{
+void tlhash_values(tlhash_t *tab, void **values) {
     size_t b, i = 0;
-    for (b = 0; b < tab->n_buckets; b++)
-    {
+    for (b = 0; b < tab->n_buckets; b++) {
         tlhash_element_t *el = tab->buckets[b];
-        while (el != NULL)
-        {
+        while (el != NULL) {
             values[i] = el->value;
             i += 1;
             el = el->next;
@@ -201,8 +204,7 @@ void tlhash_values(tlhash_t *tab, void **values)
  ***************************************/
 
 static uint32_t
-crc32(void *input, size_t length)
-{
+crc32(void *input, size_t length) {
     const uint8_t *data = (uint8_t *)input;
     size_t i = 0;
     uint32_t hash = 0xFFFFFFFF;

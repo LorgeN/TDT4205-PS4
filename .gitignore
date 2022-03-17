@@ -1,0 +1,6 @@
+*.o
+*.ast
+src/parser.c
+src/scanner.c
+src/vslc
+src/y.tab.h

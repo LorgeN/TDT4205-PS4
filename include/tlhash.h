@@ -1,26 +1,38 @@
 #ifndef TLHASH_H
 #define TLHASH_H
+
 #include <stddef.h>
-typedef struct el
-{
+
+typedef struct el {
     void *key, *value;
     size_t key_length;
     struct el *next;
 } tlhash_element_t;
 
-typedef struct
-{
+typedef struct tlhash_t {
+    struct tlhash_t *parent;  // Optional parent as fallback for missing key
     size_t n_buckets, size;
     tlhash_element_t **buckets;
 } tlhash_t;
 
-int tlhash_init(tlhash_t *tab, size_t n_buckets);
+int tlhash_init(tlhash_t *tab, size_t n_buckets, tlhash_t *parent);
+
 int tlhash_finalize(tlhash_t *tab);
+
 int tlhash_insert(tlhash_t *tab, void *key, size_t keylen, void *val);
+
+// Lookup function that will also search parent (recursively) if the element is not
+// found in the given table
+int tlhash_lookup_recurse(tlhash_t *tab, void *key, size_t keylen, void **val);
+
 int tlhash_lookup(tlhash_t *tab, void *key, size_t keylen, void **val);
+
 int tlhash_remove(tlhash_t *tab, void *key, size_t key_length);
+
 size_t tlhash_size(tlhash_t *tab);
+
 void tlhash_keys(tlhash_t *tab, void **keys);
+
 void tlhash_values(tlhash_t *tab, void **values);
 
 #define TLHASH_SUCCESS 0 /* Success */

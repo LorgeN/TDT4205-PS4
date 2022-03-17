@@ -1,11 +1,11 @@
 #ifndef VSLC_H
 #define VSLC_H
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
 
 // Prototypes for the hash table functions
 #include "tlhash.h"
@@ -32,9 +32,9 @@ extern node_t *root;
 
 // Moving global defs to global header
 
-extern tlhash_t *global_names; // Defined in ir.c, used by generator.c
-extern char **string_list;     // Defined in ir.c, used by generator.c
-extern size_t stringc;         // Defined in ir.c, used by generator.c
+extern tlhash_t *global_names;  // Defined in ir.c, used by generator.c
+extern char **string_list;      // Defined in ir.c, used by generator.c
+extern size_t stringc;          // Defined in ir.c, used by generator.c
 
 /* Global routines, called from main in vslc.c */
 void simplify_syntax_tree(void);
