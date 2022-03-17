@@ -1,6 +1,7 @@
 #ifndef NODETYPES_H
 #define NODETYPES_H
-typedef enum {
+typedef enum
+{
     PROGRAM,
     GLOBAL_LIST,
     GLOBAL,

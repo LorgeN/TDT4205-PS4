@@ -29,6 +29,5 @@ char *node_string[30] = {
     STRING(PRINT_ITEM),
     STRING(IDENTIFIER_DATA),
     STRING(NUMBER_DATA),
-    STRING(STRING_DATA)
-};
+    STRING(STRING_DATA)};
 #undef STRING

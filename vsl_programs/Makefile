@@ -10,7 +10,7 @@ ps3: $(PS3_EXAMPLES)
 ps4: $(PS4_EXAMPLES)
 
 %.ast: %.vsl
-	$(VSLC) -t < $^ > $@
+	$(VSLC) -T < $^ > $@
 
 clean:
 	-rm -r */*.ast

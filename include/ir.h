@@ -2,7 +2,8 @@
 #define IR_H
 
 /* This is the tree node structure */
-typedef struct n {
+typedef struct n
+{
     node_index_t type;
     void *data;
     struct s *entry;
@@ -11,15 +12,19 @@ typedef struct n {
 } node_t;
 
 // Export the initializer function, it is needed by the parser
-void node_init (
-    node_t *nd, node_index_t type, void *data, uint64_t n_children, ...
-);
+void node_init(
+    node_t *nd, node_index_t type, void *data, uint64_t n_children, ...);
 
-typedef enum {
-    SYM_GLOBAL_VAR, SYM_FUNCTION, SYM_PARAMETER, SYM_LOCAL_VAR
+typedef enum
+{
+    SYM_GLOBAL_VAR,
+    SYM_FUNCTION,
+    SYM_PARAMETER,
+    SYM_LOCAL_VAR
 } symtype_t;
 
-typedef struct s {
+typedef struct s
+{
     char *name;
     symtype_t type;
     node_t *node;
